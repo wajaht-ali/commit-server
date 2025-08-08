@@ -21,4 +21,11 @@ app.get("/", (req, res) => {
   });
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).send({
+    success: true,
+    message: "Server Health is 🆗!",
+  });
+});
+
 export default app;
