@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { userRoutes } from "./routes/userRoutes.js";
 
 const app = express();
 
@@ -27,5 +28,7 @@ app.get("/health", (req, res) => {
     message: "Server Health is 🆗!",
   });
 });
+
+app.use("/api/v1/users", userRoutes);
 
 export default app;
