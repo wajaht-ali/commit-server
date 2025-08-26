@@ -1,15 +1,21 @@
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import config from "../config/config.js";
 import User from "../model/userModel.js";
 
 export const registerUser = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    let { name, email, password } = req.body;
     if (!name || !email || !password) {
       return res.status(400).send({
         success: false,
         message: "All fields are required",
       });
     }
-    
+    email = email.trim().toLowerCase();
+    password = password.trim();
+    name = name.trim();
+
     const user = await User.findOne({ email });
     if (user) {
       return res.status(400).send({
@@ -18,10 +24,13 @@ export const registerUser = async (req, res) => {
       });
     }
 
+    let hashedPassword = await bcrypt.hash(password, 10);
+    console.log("Hash: ", hashedPassword);
+
     const newUser = await User.create({
       name,
       email,
-      password,
+      password: hashedPassword,
     });
 
     res.status(201).send({
@@ -34,6 +43,58 @@ export const registerUser = async (req, res) => {
       success: false,
       message: "Failed to register user",
       error: error.message,
+    });
+  }
+};
+
+export const loginUser = async (req, res) => {
+  try {
+    let { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).send({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    email = email.trim().toLowerCase();
+    password = password.trim();
+
+    console.log(`email: ${email}, password: ${password}`);
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).send({
+        success: false,
+        message: "Invalid Password",
+      });
+    }
+
+    const jwtToken = jwt.sign(
+      { id: user.id || user._id },
+      config.JWT_SECRET_KEY,
+      { expiresIn: "1d" }
+    );
+
+    res.status(200).send({
+      success: true,
+      message: "Login successfully!",
+      token: jwtToken,
+      user: user,
+    });
+  } catch (error) {
+    console.log("Error with login user", error);
+    return res.status(500).send({
+      success: false,
+      message: "Error with login user",
+      err: error,
     });
   }
 };
