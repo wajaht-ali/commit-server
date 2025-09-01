@@ -60,7 +60,6 @@ export const loginUser = async (req, res) => {
     email = email.trim().toLowerCase();
     password = password.trim();
 
-    console.log(`email: ${email}, password: ${password}`);
     const user = await User.findOne({ email: email });
     if (!user) {
       return res.status(404).send({
