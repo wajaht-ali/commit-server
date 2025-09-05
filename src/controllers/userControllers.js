@@ -100,7 +100,7 @@ export const loginUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find();
+    const users = await User.find().select("-password");
     return res.status(200).send({
       success: true,
       message: "Get all users data",
@@ -112,5 +112,38 @@ export const getAllUsers = async (req, res) => {
       message: "Failed to get users data",
       error: error.message,
     });
+  }
+};
+
+export const getSingleUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (!userId) {
+      return res.status(400).send({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+    const user = await User.findById(userId).select("-password");
+    if (!user) {
+      return res.status(404).send({
+        success: false,
+        message: "User not found",
+      });
+    }
+    return res.status(200).send({
+      success: true,
+      message: "Get single user data",
+      userData: user,
+    });
+  } catch (error) {
+    console.log("Error with get single user", error);
+    return res.status(500).send({
+      success: false,
+      message: "Error with get single user",
+      err: error ? error.message : "Internal Server Error",
+    });
+  } finally {
+    console.log("Get single user request completed");
   }
 };

@@ -11,6 +11,7 @@ export const isSignedIn = async (req, res, next) => {
         message: "Unauthorized access denied",
       });
     }
+    
     const token = headers.split(" ")[1];
     const decoded = jwt.verify(token, config.JWT_SECRET_KEY);
     const user = await User.findById(decoded.id).select("-password");

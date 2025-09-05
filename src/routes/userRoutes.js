@@ -1,6 +1,7 @@
 import express from "express";
 import {
   getAllUsers,
+  getSingleUser,
   loginUser,
   registerUser,
 } from "../controllers/userControllers.js";
@@ -11,5 +12,6 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.get("/allUsers", isSignedIn, isAdmin, getAllUsers);
+router.get("/singleUser/:id", isSignedIn, getSingleUser);
 
 export { router as userRoutes };
