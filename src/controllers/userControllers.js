@@ -2,11 +2,12 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import User from "../model/userModel.js";
+import userModel from "../model/userModel.js";
 
 export const registerUser = async (req, res) => {
   try {
-    let { name, email, password } = req.body;
-    if (!name || !email || !password) {
+    let { name, userName, email, password } = req.body;
+    if (!name || !userName || !email || !password) {
       return res.status(400).send({
         success: false,
         message: "All fields are required",
@@ -15,8 +16,9 @@ export const registerUser = async (req, res) => {
     email = email.trim().toLowerCase();
     password = password.trim();
     name = name.trim();
+    userName = userName.trim().toLowerCase();
 
-    const user = await User.findOne({ email });
+    const user = await userModel.findOne({ email });
     if (user) {
       return res.status(400).send({
         success: false,
@@ -25,10 +27,10 @@ export const registerUser = async (req, res) => {
     }
 
     let hashedPassword = await bcrypt.hash(password, 10);
-    console.log("Hash: ", hashedPassword);
 
-    const newUser = await User.create({
+    const newUser = await userModel.create({
       name,
+      userName,
       email,
       password: hashedPassword,
     });
@@ -60,7 +62,7 @@ export const loginUser = async (req, res) => {
     email = email.trim().toLowerCase();
     password = password.trim();
 
-    const user = await User.findOne({ email: email });
+    const user = await userModel.findOne({ email: email });
     if (!user) {
       return res.status(404).send({
         success: false,
@@ -100,7 +102,7 @@ export const loginUser = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
+    const users = await userModel.find().select("-password");
     return res.status(200).send({
       success: true,
       message: "Get all users data",
@@ -124,7 +126,7 @@ export const getSingleUser = async (req, res) => {
         message: "User ID is required",
       });
     }
-    const user = await User.findById(userId).select("-password");
+    const user = await userModel.findById(userId).select("-password");
     if (!user) {
       return res.status(404).send({
         success: false,
@@ -143,7 +145,5 @@ export const getSingleUser = async (req, res) => {
       message: "Error with get single user",
       err: error ? error.message : "Internal Server Error",
     });
-  } finally {
-    console.log("Get single user request completed");
   }
 };

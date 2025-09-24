@@ -4,21 +4,43 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
+      trim: true,
+      required: [true, "Name is required"],
+      maxlength: 100,
     },
+
+    userName: {
+      type: String,
+      trim: true,
+      required: [true, "Username is required"],
+      lowercase: true,
+      unique: true,
+      minlength: 3,
+      maxlength: 50,
+      match: [/^[a-z0-9._-]+$/, "Username contains invalid characters"],
+    },
+
     email: {
       type: String,
-      required: true,
+      trim: true,
+      required: [true, "Email is required"],
+      lowercase: true,
       unique: true,
+      match: [/\S+@\S+\.\S+/, "Email is invalid"],
     },
+
     password: {
       type: String,
-      required: true,
+      required: [true, "Password is required"],
+      minlength: [8, "Password must be at least 8 characters"],
+      select: false, // exclude by default from queries
     },
-    role: {
+
+    status: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      enum: ["viewer", "editor", "admin"],
+      default: "viewer",
+      index: true,
     },
   },
   {
@@ -26,6 +48,5 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-const User = mongoose.model("users", userSchema);
-
-export default User;
+const userModel = mongoose.model("users", userSchema);
+export default userModel;
