@@ -3,11 +3,6 @@ import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
 import { userRoutes } from "./routes/userRoutes.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(
@@ -20,12 +15,13 @@ app.use(
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(express.static("public"));
 
 // Later, in your route:
 app.get("/", (req, res) => {
-  const absPath = path.join(__dirname, "public", "index.html");
-  res.sendFile(absPath);
+  res.status(200).send({
+    success: true,
+    message: "Welcome to Commit Server! 🚀",
+  });
 });
 
 app.get("/health", (req, res) => {
