@@ -1,9 +1,10 @@
 import express from "express";
 import cors from "cors";
+import http from "http";
+import { Server } from "socket.io";
 import { userRoutes } from "./routes/userRoutes.js";
 
 const app = express();
-
 app.use(
   cors({
     origin: "*",
@@ -14,12 +15,14 @@ app.use(
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.static("public"));
 
 app.get("/", (req, res) => {
-  res.status(200).send({
-    success: true,
-    message: "Home route is working!!!",
-  });
+  // res.status(200).send({
+  //   success: true,
+  //   message: "Home route is working!!!",
+  // });
+  res.sendFile("index.html");
 });
 
 app.get("/health", (req, res) => {
@@ -31,4 +34,15 @@ app.get("/health", (req, res) => {
 
 app.use("/api/v1/user", userRoutes);
 
-export default app;
+const server = http.createServer(app);
+const io = new Server(server, {
+  // cors
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST", "DELETE", "PUT"],
+    credentials: true,
+  },
+});
+
+
+export { app, server, io };
