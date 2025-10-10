@@ -16,7 +16,6 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Later, in your route:
 app.get("/", (req, res) => {
   res.status(200).send({
     success: true,
@@ -35,7 +34,6 @@ app.use("/api/v1/user", userRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
-  // cors
   cors: {
     origin: "*",
     methods: ["GET", "POST", "DELETE", "PUT"],
