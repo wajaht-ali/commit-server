@@ -3,6 +3,7 @@ import cors from "cors";
 import http from "http";
 import { Server } from "socket.io";
 import { userRoutes } from "./routes/userRoutes.js";
+import { codeRoutes } from "./routes/codeRoutes.js";
 
 const app = express();
 app.use(
@@ -31,6 +32,7 @@ app.get("/health", (req, res) => {
 });
 
 app.use("/api/v1/user", userRoutes);
+app.use("/api/v1/code", codeRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {

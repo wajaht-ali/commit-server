@@ -7,8 +7,8 @@ const startServer = () => {
   connectDB();
   const PORT = config.PORT;
 
-  // initializing sockets here
-  initializeSocketIO(io);
+  const roomStates = new Map();
+  initializeSocketIO(io, roomStates);
 
   server.listen(PORT, () => {
     console.log(`🔥 Server is running on http://localhost:${PORT}`);
