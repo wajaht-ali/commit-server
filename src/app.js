@@ -4,8 +4,10 @@ import http from "http";
 import { Server } from "socket.io";
 import { userRoutes } from "./routes/userRoutes.js";
 import { codeRoutes } from "./routes/codeRoutes.js";
+import { aiRoutes } from "./routes/aiRoutes.js";
 
 const app = express();
+
 app.use(
   cors({
     origin: "*",
@@ -31,8 +33,10 @@ app.get("/health", (req, res) => {
   });
 });
 
-app.use("/api/v1/user", userRoutes);
-app.use("/api/v1/code", codeRoutes);
+const routePrefix = "/api/v1";
+app.use(`${routePrefix}/user`, userRoutes);
+app.use(`${routePrefix}/code`, codeRoutes);
+app.use(`${routePrefix}/ai`, aiRoutes);
 
 const server = http.createServer(app);
 const io = new Server(server, {
