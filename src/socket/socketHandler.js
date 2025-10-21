@@ -92,12 +92,13 @@ export const initializeSocketIO = (io, roomStates) => {
       socket.to(roomId).emit("code-update", code);
     });
 
-    socket.on("leave-room", () => {
-      handleUserDisconnect(socket.id);
-    });
+    // socket.on("leave-room", () => {
+    //   handleUserDisconnect(socket.id);
+    // });
 
     socket.on("disconnect", () => {
       handleUserDisconnect(socket.id);
+      console.log(`User Disconnected: ${socket.id}`);
     });
   });
 };
