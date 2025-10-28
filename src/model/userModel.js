@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       unique: true,
       minlength: 3,
-      maxlength: 50,
+      maxlength: 15,
       match: [/^[a-z0-9._-]+$/, "Username contains invalid characters"],
     },
 
@@ -34,13 +34,6 @@ const userSchema = new mongoose.Schema(
       required: [true, "Password is required"],
       minlength: [8, "Password must be at least 8 characters"],
       select: false,
-    },
-
-    status: {
-      type: String,
-      enum: ["viewer", "editor", "admin"],
-      default: "viewer",
-      index: true,
     },
   },
   {

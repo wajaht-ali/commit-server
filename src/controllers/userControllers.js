@@ -147,3 +147,43 @@ export const getSingleUser = async (req, res) => {
     });
   }
 };
+
+export const googleSignup = async (req, res) => {
+  try {
+    console.log("Starting google signup");
+    const { name, email } = req.body;
+
+    if (!email) return res.status(400).send({ message: "Email required" });
+    let user = await userModel.findOne({ email });
+    console.log("Processing");
+    if (!user) {
+      const baseUserName = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "")
+        .slice(0, 12);
+
+      let uniqueUserName = baseUserName;
+      let counter = 1;
+
+      while (await userModel.findOne({ userName: uniqueUserName })) {
+        uniqueUserName = `${baseUserName}${counter++}`;
+      }
+
+      user = await userModel.create({
+        name,
+        email,
+        userName: uniqueUserName,
+        password: "firebase-auth",
+      });
+    }
+
+    res.status(201).send({
+      success: true,
+      msg: "Sign up successfully",
+      userData: user
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+}
