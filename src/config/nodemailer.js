@@ -2,16 +2,16 @@ import nodemailer from 'nodemailer';
 import { getForgotPasswordTemplate } from './emailTemplates.js';
 
 const createTransporter = () => {
+  console.log('SENDER_EMAIL:', process.env.SENDER_EMAIL);
+  console.log('SENDER_EMAIL_HOST:', process.env.SENDER_EMAIL_HOST); // If used
+  console.log('SENDER_EMAIL_PASSWORD (partial):', process.env.SENDER_EMAIL_PASSWORD ? process.env.SENDER_EMAIL_PASSWORD.substring(0, 3) + '...' : 'Not set');
   return nodemailer.createTransport({
     service: 'gmail',
     host: process.env.SENDER_EMAIL_HOST,
-    port: 2525,
     auth: {
       user: process.env.SENDER_EMAIL,
       pass: process.env.SENDER_EMAIL_PASSWORD,
     },
-    logger: true,  // log to console
-    debug: true,   // include connection logs
     connectionTimeout: 15000, 
   });
 };
