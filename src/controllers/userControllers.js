@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import User from "../model/userModel.js";
 import userModel from "../model/userModel.js";
+import admin from "../config/firebase.js";
+import { sendPasswordResetEmail } from "../config/nodemailer.js";
+
 
 export const registerUser = async (req, res) => {
   try {
@@ -46,6 +49,44 @@ export const registerUser = async (req, res) => {
       message: "Failed to register user",
       error: error.message,
     });
+  }
+};
+
+export const googleSignup = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+
+    if (!email) return res.status(400).send({ message: "Email required" });
+    let user = await userModel.findOne({ email });
+    if (!user) {
+      const baseUserName = name
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "")
+        .slice(0, 12);
+
+      let uniqueUserName = baseUserName;
+      let counter = 1;
+
+      while (await userModel.findOne({ userName: uniqueUserName })) {
+        uniqueUserName = `${baseUserName}${counter++}`;
+      }
+
+      user = await userModel.create({
+        name,
+        email,
+        userName: uniqueUserName,
+        password: "firebase-auth",
+      });
+    }
+
+    res.status(201).send({
+      success: true,
+      msg: "Sign up successfully",
+      userData: user
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -100,6 +141,63 @@ export const loginUser = async (req, res) => {
   }
 };
 
+export const resetPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+    }
+
+    let userRecord;
+    try {
+      userRecord = await admin.auth().getUserByEmail(email);
+    } catch (error) {
+      if (error.code === "auth/user-not-found") {
+        return res.status(404).json({
+          success: false,
+          message: "No account found with this email.",
+        });
+      }
+      throw error;
+    }
+
+    const resetLink = await admin.auth().generatePasswordResetLink(email);
+    try {
+      await sendPasswordResetEmail(
+        email,
+        resetLink,
+        userRecord.displayName || 'Code Commit'
+      );
+
+      console.log(`Password reset email sent to: ${email}`);
+
+      return res.status(200).json({
+        success: true,
+        message: "Password reset link has been sent to your email.",
+        resetLink
+      });
+
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to send password reset email. Please try again.",
+      });
+    }
+
+  } catch (error) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || "Internal server error",
+    });
+  }
+};
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await userModel.find().select("-password");
@@ -147,43 +245,3 @@ export const getSingleUser = async (req, res) => {
     });
   }
 };
-
-export const googleSignup = async (req, res) => {
-  try {
-    console.log("Starting google signup");
-    const { name, email } = req.body;
-
-    if (!email) return res.status(400).send({ message: "Email required" });
-    let user = await userModel.findOne({ email });
-    console.log("Processing");
-    if (!user) {
-      const baseUserName = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "")
-        .slice(0, 12);
-
-      let uniqueUserName = baseUserName;
-      let counter = 1;
-
-      while (await userModel.findOne({ userName: uniqueUserName })) {
-        uniqueUserName = `${baseUserName}${counter++}`;
-      }
-
-      user = await userModel.create({
-        name,
-        email,
-        userName: uniqueUserName,
-        password: "firebase-auth",
-      });
-    }
-
-    res.status(201).send({
-      success: true,
-      msg: "Sign up successfully",
-      userData: user
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-}
