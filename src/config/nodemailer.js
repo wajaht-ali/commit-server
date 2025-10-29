@@ -5,12 +5,13 @@ const createTransporter = () => {
   return nodemailer.createTransport({
     service: 'gmail',
     host: process.env.SENDER_EMAIL_HOST,
-    port: 465,
-    secure: true,
+    port: 2525,
     auth: {
       user: process.env.SENDER_EMAIL,
       pass: process.env.SENDER_EMAIL_PASSWORD,
     },
+    logger: true,  // log to console
+    debug: true,   // include connection logs
     connectionTimeout: 15000, 
   });
 };
