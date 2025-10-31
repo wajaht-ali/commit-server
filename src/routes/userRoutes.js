@@ -5,7 +5,7 @@ import {
   loginUser,
   registerUser,
   resetPassword,
-  googleSignup
+  handleProviderAuth
 } from "../controllers/userControllers.js";
 import { isAdmin, isSignedIn } from "../middlewares/user.middlewares.js";
 
@@ -14,7 +14,7 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/reset-password", resetPassword);
-router.post("/googleSignup", googleSignup);
+router.post("/googleSignup", handleProviderAuth);
 router.get("/allUsers", isSignedIn, isAdmin, getAllUsers);
 router.get("/singleUser/:id", isSignedIn, getSingleUser);
 

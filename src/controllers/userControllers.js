@@ -51,41 +51,51 @@ export const registerUser = async (req, res) => {
   }
 };
 
-export const googleSignup = async (req, res) => {
+export const handleProviderAuth = async (req, res) => {
   try {
     const { name, email } = req.body;
 
-    if (!email) return res.status(400).send({ message: "Email required" });
-    let user = await userModel.findOne({ email });
-    if (!user) {
-      const baseUserName = name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "")
-        .slice(0, 12);
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
 
-      let uniqueUserName = baseUserName;
-      let counter = 1;
-
-      while (await userModel.findOne({ userName: uniqueUserName })) {
-        uniqueUserName = `${baseUserName}${counter++}`;
-      }
-
-      user = await userModel.create({
-        name,
-        email,
-        userName: uniqueUserName,
-        password: "firebase-auth",
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      console.log(`User with email ${email} found. Logging in.`);
+      return res.status(200).send({ 
+        success: true,
+        msg: "Logged in successfully",
+        userData: existingUser
       });
     }
 
-    res.status(201).send({
+    const baseUserName = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "")
+      .slice(0, 12);
+
+    let uniqueUserName = baseUserName;
+    let counter = 1;
+    while (await userModel.findOne({ userName: uniqueUserName })) {
+      uniqueUserName = `${baseUserName}${counter++}`;
+    }
+
+    const newUser = await userModel.create({
+      name,
+      email,
+      userName: uniqueUserName,
+      password: "firebase-auth", 
+    });
+
+    res.status(201).send({ 
       success: true,
       msg: "Sign up successfully",
-      userData: user
+      userData: newUser
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error in provider authentication:", err);
+    res.status(500).json({ success: false, message: "An internal server error occurred." });
   }
 };
 
