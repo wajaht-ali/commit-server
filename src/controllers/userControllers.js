@@ -51,9 +51,9 @@ export const registerUser = async (req, res) => {
   }
 };
 
-export const handleProviderAuth = async (req, res) => {
+export const processAuthUser = async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email } = req.body; 
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
@@ -62,39 +62,44 @@ export const handleProviderAuth = async (req, res) => {
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       console.log(`User with email ${email} found. Logging in.`);
-      return res.status(200).send({ 
+      return res.status(200).send({
         success: true,
         msg: "Logged in successfully",
         userData: existingUser
       });
     }
 
-    const baseUserName = name
+    const displayName = name && name.trim() !== '' ? name.trim() : email.split('@')[0]; 
+        const baseUserName = displayName
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "")
+      .replace(/[^a-z0-9]+/g, "") 
       .slice(0, 12);
 
-    let uniqueUserName = baseUserName;
+    let uniqueUserName = baseUserName || `user${Math.random().toString(36).substring(2, 8)}`;
+    
     let counter = 1;
     while (await userModel.findOne({ userName: uniqueUserName })) {
-      uniqueUserName = `${baseUserName}${counter++}`;
+      uniqueUserName = `${baseUserName || 'user'}${counter++}`;
     }
 
     const newUser = await userModel.create({
-      name,
+      name: displayName,
       email,
       userName: uniqueUserName,
       password: "firebase-auth", 
     });
 
-    res.status(201).send({ 
+    res.status(201).send({
       success: true,
       msg: "Sign up successfully",
       userData: newUser
     });
 
   } catch (err) {
-    console.error("Error in provider authentication:", err);
+    console.error("Error in user authentication process:", err);
+    if (err.name === 'ValidationError') {
+        return res.status(400).json({ success: false, message: err.message });
+    }
     res.status(500).json({ success: false, message: "An internal server error occurred." });
   }
 };
