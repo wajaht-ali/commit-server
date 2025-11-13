@@ -41,15 +41,23 @@ export function registerVoiceSignaling(io, { usersInRooms, roomMeta }) {
 
     socket.on("voice:join", ({ roomId }) => {
       const meta = roomMeta.get(roomId);
-      if (!meta?.callActive) {
+      if (!meta) {
+        socket.emit("voice:error", { message: "Room not initialized." });
+        return;
+      }
+
+      const isCreator = meta.callStartedBy === socket.id;
+      if (!meta.callActive && !isCreator) {
         socket.emit("voice:error", { message: "No active call in this room." });
         return;
       }
+
       meta.participants.add(socket.id);
       emitRoster(roomId);
 
       socket.to(roomId).emit("voice:peer-join", { socketId: socket.id });
     });
+
 
     socket.on("voice:leave", ({ roomId }) => {
       const meta = roomMeta.get(roomId);
@@ -66,7 +74,7 @@ export function registerVoiceSignaling(io, { usersInRooms, roomMeta }) {
         emitRoster(roomId);
       }
     });
-
+    
     socket.on("voice:end", ({ roomId }) => {
       const meta = roomMeta.get(roomId);
       if (!meta) return;
