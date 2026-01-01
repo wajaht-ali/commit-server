@@ -20,6 +20,22 @@ const userSchema = new mongoose.Schema(
       match: [/^[a-z0-9._-]+$/, "Username contains invalid characters"],
     },
 
+    headline: {
+      type: String,
+      trim: true,
+      maxlength: 150,
+      default: "-"
+    },
+
+    socialLinks: {
+      type: Map,
+      of: String,
+      default: {
+        github: "https://www.github.com/",
+        linkedin: "https://www.linkedin.com/"
+      },
+    },
+    
     email: {
       type: String,
       trim: true,

@@ -53,7 +53,7 @@ export const registerUser = async (req, res) => {
 
 export const processAuthUser = async (req, res) => {
   try {
-    const { name, email } = req.body; 
+    const { name, email, headline, socialLinks } = req.body;
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
@@ -69,24 +69,29 @@ export const processAuthUser = async (req, res) => {
       });
     }
 
-    const displayName = name && name.trim() !== '' ? name.trim() : email.split('@')[0]; 
-        const baseUserName = displayName
+    const displayName = name && name.trim() !== '' ? name.trim() : email.split('@')[0];
+    const baseUserName = displayName
       .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "") 
+      .replace(/[^a-z0-9]+/g, "")
       .slice(0, 12);
 
     let uniqueUserName = baseUserName || `user${Math.random().toString(36).substring(2, 8)}`;
-    
+
     let counter = 1;
     while (await userModel.findOne({ userName: uniqueUserName })) {
       uniqueUserName = `${baseUserName || 'user'}${counter++}`;
     }
 
     const newUser = await userModel.create({
-      name: displayName,
+      name: name,
       email,
       userName: uniqueUserName,
-      password: "firebase-auth", 
+      password: "firebase-auth",
+      headline: headline || "Hey there! I'm using Commit.",
+      socialLinks: socialLinks || {
+        github: "https://www.github.com/",
+        linkedin: "https://www.linkedin.com/"
+      },
     });
 
     res.status(201).send({
@@ -98,11 +103,59 @@ export const processAuthUser = async (req, res) => {
   } catch (err) {
     console.error("Error in user authentication process:", err);
     if (err.name === 'ValidationError') {
-        return res.status(400).json({ success: false, message: err.message });
+      return res.status(400).json({ success: false, message: err.message });
     }
     res.status(500).json({ success: false, message: "An internal server error occurred." });
   }
 };
+
+export const updateUser = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    if (!userId) {
+      return res.status(400).send({
+        success: false,
+        message: "User ID is required",
+      });
+    }
+    const user = await userModel.findById(userId);
+
+    const { name, headline, socialLinks, password } = req.body;
+    if (password && password.length < 8) {
+      return res.status(400).send({
+        success: false,
+        message: "Password must be at least 8 characters long",
+      });
+    }
+    const hashedPassword = password ? await bcrypt.hash(password, 10) : user.password;
+
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      {
+        name: name || user.name,
+        headline: headline || user.headline,
+        socialLinks: socialLinks || user.socialLinks,
+        password: hashedPassword,
+      },
+      { new: true }
+    ).select("-password");
+
+    res.status(200).send(
+      {
+        success: true,
+        message: "User updated successfully",
+        userData: updatedUser
+      }
+    )
+  } catch (error) {
+    console.log("Error with update user", error);
+    return res.status(500).send({
+      success: false,
+      message: "Error with update user",
+      err: error,
+    })
+  }
+}
 
 export const loginUser = async (req, res) => {
   try {
