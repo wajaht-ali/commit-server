@@ -9,6 +9,12 @@ const userSchema = new mongoose.Schema(
       maxlength: 100,
     },
 
+    avatar: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+
     userName: {
       type: String,
       trim: true,
@@ -24,7 +30,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 150,
-      default: "-"
+      default: "-",
     },
 
     socialLinks: {
@@ -32,10 +38,10 @@ const userSchema = new mongoose.Schema(
       of: String,
       default: {
         github: "https://www.github.com/",
-        linkedin: "https://www.linkedin.com/"
+        linkedin: "https://www.linkedin.com/in/",
       },
     },
-    
+
     email: {
       type: String,
       trim: true,

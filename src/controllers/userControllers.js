@@ -1,10 +1,8 @@
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
-import User from "../model/userModel.js";
 import userModel from "../model/userModel.js";
 import admin from "../config/firebase.js";
-
 
 export const registerUser = async (req, res) => {
   try {
@@ -53,33 +51,48 @@ export const registerUser = async (req, res) => {
 
 export const processAuthUser = async (req, res) => {
   try {
-    const { name, email, headline, socialLinks } = req.body;
+    const { name, email, headline, socialLinks, avatar } = req.body;
 
     if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Email is required" });
     }
 
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
-      console.log(`User with email ${email} found. Logging in.`);
+      if (avatar && !existingUser.avatar) {
+        existingUser.avatar = avatar;
+        await existingUser.save();
+      }
+
+      const jwtToken = jwt.sign(
+        { id: existingUser._id || existingUser.id },
+        config.JWT_SECRET_KEY,
+        { expiresIn: "1d" }
+      );
+
       return res.status(200).send({
         success: true,
         msg: "Logged in successfully",
-        userData: existingUser
+        userData: existingUser,
+        token: jwtToken,
       });
     }
 
-    const displayName = name && name.trim() !== '' ? name.trim() : email.split('@')[0];
+    const displayName =
+      name && name.trim() !== "" ? name.trim() : email.split("@")[0];
     const baseUserName = displayName
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "")
       .slice(0, 12);
 
-    let uniqueUserName = baseUserName || `user${Math.random().toString(36).substring(2, 8)}`;
+    let uniqueUserName =
+      baseUserName || `user${Math.random().toString(36).substring(2, 8)}`;
 
     let counter = 1;
     while (await userModel.findOne({ userName: uniqueUserName })) {
-      uniqueUserName = `${baseUserName || 'user'}${counter++}`;
+      uniqueUserName = `${baseUserName || "user"}${counter++}`;
     }
 
     const newUser = await userModel.create({
@@ -90,22 +103,31 @@ export const processAuthUser = async (req, res) => {
       headline: headline || "Hey there! I'm using Commit.",
       socialLinks: socialLinks || {
         github: "https://www.github.com/",
-        linkedin: "https://www.linkedin.com/"
+        linkedin: "https://www.linkedin.com/",
       },
+      avatar: avatar || "",
     });
+
+    const jwtToken = jwt.sign(
+      { id: newUser._id || newUser.id },
+      config.JWT_SECRET_KEY,
+      { expiresIn: "1d" }
+    );
 
     res.status(201).send({
       success: true,
       msg: "Sign up successfully",
-      userData: newUser
+      userData: newUser,
+      token: jwtToken,
     });
-
   } catch (err) {
     console.error("Error in user authentication process:", err);
-    if (err.name === 'ValidationError') {
+    if (err.name === "ValidationError") {
       return res.status(400).json({ success: false, message: err.message });
     }
-    res.status(500).json({ success: false, message: "An internal server error occurred." });
+    res
+      .status(500)
+      .json({ success: false, message: "An internal server error occurred." });
   }
 };
 
@@ -118,44 +140,163 @@ export const updateUser = async (req, res) => {
         message: "User ID is required",
       });
     }
-    const user = await userModel.findById(userId);
 
-    const { name, headline, socialLinks, password } = req.body;
-    if (password && password.length < 8) {
-      return res.status(400).send({
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).send({
         success: false,
-        message: "Password must be at least 8 characters long",
+        message: "User not found",
       });
     }
-    const hashedPassword = password ? await bcrypt.hash(password, 10) : user.password;
 
-    const updatedUser = await userModel.findByIdAndUpdate(
-      userId,
-      {
-        name: name || user.name,
-        headline: headline || user.headline,
-        socialLinks: socialLinks || user.socialLinks,
-        password: hashedPassword,
-      },
-      { new: true }
-    ).select("-password");
+    const { name, headline, socialLinks, avatar, userName, email, password } =
+      req.body;
+    if (userName !== undefined) {
+      return res.status(400).send({
+        success: false,
+        message: "Username cannot be updated",
+      });
+    }
 
-    res.status(200).send(
-      {
-        success: true,
-        message: "User updated successfully",
-        userData: updatedUser
+    if (email !== undefined) {
+      return res.status(400).send({
+        success: false,
+        message: "Email cannot be updated",
+      });
+    }
+
+    if (password !== undefined) {
+      return res.status(400).send({
+        success: false,
+        message: "Password cannot be updated through this endpoint",
+      });
+    }
+
+    const updateData = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string" || name.trim().length === 0) {
+        return res.status(400).send({
+          success: false,
+          message: "Name must be a non-empty string",
+        });
       }
-    )
+      if (name.trim().length > 100) {
+        return res.status(400).send({
+          success: false,
+          message: "Name must be less than 100 characters",
+        });
+      }
+      updateData.name = name.trim();
+    }
+
+    if (headline !== undefined) {
+      if (typeof headline !== "string") {
+        return res.status(400).send({
+          success: false,
+          message: "Headline must be a string",
+        });
+      }
+      if (headline.trim().length > 150) {
+        return res.status(400).send({
+          success: false,
+          message: "Headline must be less than 150 characters",
+        });
+      }
+      updateData.headline = headline.trim();
+    }
+
+    if (socialLinks !== undefined) {
+      if (typeof socialLinks !== "object" || socialLinks === null) {
+        return res.status(400).send({
+          success: false,
+          message: "Social links must be an object",
+        });
+      }
+
+      const allowedSocialLinks = ["github", "linkedin"];
+      const socialLinksObj = {};
+
+      for (const key of allowedSocialLinks) {
+        if (socialLinks[key] !== undefined) {
+          if (typeof socialLinks[key] !== "string") {
+            return res.status(400).send({
+              success: false,
+              message: `Social link ${key} must be a string`,
+            });
+          }
+          socialLinksObj[key] = socialLinks[key].trim();
+        }
+      }
+
+      const existingSocialLinks =
+        user.socialLinks instanceof Map
+          ? Object.fromEntries(user.socialLinks)
+          : user.socialLinks || {};
+
+      updateData.socialLinks = {
+        ...existingSocialLinks,
+        ...socialLinksObj,
+      };
+    }
+
+    if (avatar !== undefined) {
+      if (avatar !== null && typeof avatar !== "string") {
+        return res.status(400).send({
+          success: false,
+          message: "Avatar must be a string or null",
+        });
+      }
+
+      // Allow clearing avatar by sending null or empty string
+      if (!avatar) {
+        updateData.avatar = "";
+      } else {
+        updateData.avatar = avatar.trim();
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).send({
+        success: false,
+        message: "No valid fields to update",
+      });
+    }
+
+    const updatedUser = await userModel
+      .findByIdAndUpdate(userId, updateData, { new: true, runValidators: true })
+      .select("-password");
+
+    if (!updatedUser) {
+      return res.status(500).send({
+        success: false,
+        message: "Failed to update user",
+      });
+    }
+
+    res.status(200).send({
+      success: true,
+      message: "User updated successfully",
+      userData: updatedUser,
+    });
   } catch (error) {
     console.log("Error with update user", error);
+
+    if (error.name === "ValidationError") {
+      return res.status(400).send({
+        success: false,
+        message: "Validation error",
+        error: error.message,
+      });
+    }
+
     return res.status(500).send({
       success: false,
-      message: "Error with update user",
-      err: error,
-    })
+      message: "Error updating user",
+      error: error.message,
+    });
   }
-}
+};
 
 export const loginUser = async (req, res) => {
   try {

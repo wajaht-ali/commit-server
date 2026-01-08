@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 // const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 // const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
 
 export const generateCode = async (req, res) => {
   const { prompt, language } = req.body;
@@ -11,7 +11,6 @@ export const generateCode = async (req, res) => {
   if (!prompt || !language) {
     return res.status(400).json({ error: "Prompt and language are required." });
   }
-
   const fullPrompt = `You are an expert coding assistant. 
     Write a clean, efficient, and well-documented code snippet in ${language}.
     The user's request is: "${prompt}".
