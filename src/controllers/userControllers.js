@@ -1,53 +1,7 @@
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import config from "../config/config.js";
 import userModel from "../model/userModel.js";
 import admin from "../config/firebase.js";
-
-export const registerUser = async (req, res) => {
-  try {
-    let { name, userName, email, password } = req.body;
-    if (!name || !userName || !email || !password) {
-      return res.status(400).send({
-        success: false,
-        message: "All fields are required",
-      });
-    }
-    email = email.trim().toLowerCase();
-    password = password.trim();
-    name = name.trim();
-    userName = userName.trim().toLowerCase();
-
-    const user = await userModel.findOne({ email });
-    if (user) {
-      return res.status(400).send({
-        success: false,
-        message: "User already exists",
-      });
-    }
-
-    let hashedPassword = await bcrypt.hash(password, 10);
-
-    const newUser = await userModel.create({
-      name,
-      userName,
-      email,
-      password: hashedPassword,
-    });
-
-    res.status(201).send({
-      success: true,
-      message: "User registered successfully",
-      userData: newUser,
-    });
-  } catch (error) {
-    return res.status(500).send({
-      success: false,
-      message: "Failed to register user",
-      error: error.message,
-    });
-  }
-};
 
 export const processAuthUser = async (req, res) => {
   try {
@@ -294,57 +248,6 @@ export const updateUser = async (req, res) => {
       success: false,
       message: "Error updating user",
       error: error.message,
-    });
-  }
-};
-
-export const loginUser = async (req, res) => {
-  try {
-    let { email, password } = req.body;
-    if (!email || !password) {
-      return res.status(400).send({
-        success: false,
-        message: "All fields are required",
-      });
-    }
-
-    email = email.trim().toLowerCase();
-    password = password.trim();
-
-    const user = await userModel.findOne({ email: email });
-    if (!user) {
-      return res.status(404).send({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).send({
-        success: false,
-        message: "Invalid Password",
-      });
-    }
-
-    const jwtToken = jwt.sign(
-      { id: user.id || user._id },
-      config.JWT_SECRET_KEY,
-      { expiresIn: "1d" }
-    );
-
-    res.status(200).send({
-      success: true,
-      message: "Login successfully!",
-      token: jwtToken,
-      user: user,
-    });
-  } catch (error) {
-    console.log("Error with login user", error);
-    return res.status(500).send({
-      success: false,
-      message: "Error with login user",
-      err: error,
     });
   }
 };
