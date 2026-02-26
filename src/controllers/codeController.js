@@ -38,11 +38,12 @@ export const codeExecution = async (req, res) => {
           "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36",
       },
     });
-
+    console.log("Piston API response status:", response);
     if (!response.ok) {
       const errorBody = await response.text();
+      console.error("Piston error body:", errorBody);
       throw new Error(
-        `Piston API responded with status ${response.status}. See server logs for details.`
+        `Piston API responded with status ${response.status}: ${errorBody}`
       );
     }
 
