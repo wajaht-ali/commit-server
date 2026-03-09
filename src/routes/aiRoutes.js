@@ -79,4 +79,6 @@ router.post("/report-bug", async (req, res) => {
   }
 });
 
+router.post("/code-generation", generateCode);
+
 export { router as aiRoutes };
